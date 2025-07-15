@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Ola Fare Estimate</title>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDPrJsx1qkMrAvYwkMMT6Gs6YMWarej_gs&libraries=places"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h2 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+    .input-group {
+      margin-bottom: 15px;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 5px 0;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    button {
+      background: #000;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px 0;
+    }
+    button:hover {
+      background: #333;
+    }
+    #map {
+      height: 400px;
+      width: 100%;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    .fare-result {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 4px;
+      margin-top: 20px;
+    }
+    .fare-item {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+    }
+    .fare-item:last-child {
+      border-bottom: none;
+    }
+    .error {
+      color: #dc3545;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      background: #f8d7da;
+    }
+    .loading {
+      text-align: center;
+      padding: 20px;
+    }
+    .provider-title {
+      margin-top: 20px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #111;
+      border-bottom: 2px solid #ddd;
+      padding-bottom: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Ola Fare Estimate (Mocked)</h2>
+
+    <div class="input-group">
+      <label for="pickup">Pickup Location:</label>
+      <input type="text" id="pickup" placeholder="Enter pickup location">
+    </div>
+
+    <div class="input-group">
+      <label for="drop">Drop Location:</label>
+      <input type="text" id="drop" placeholder="Enter drop location">
+    </div>
+
+    <button onclick="getFareEstimate()">Get Fare Estimate</button>
+
+    <div id="map"></div>
+
+    <div id="fare-result" class="fare-result">
+      <div id="loading" class="loading" style="display: none;">
+        <p>Calculating fare estimates...</p>
+      </div>
+      <div id="error" class="error" style="display: none;"></div>
+      <div id="results"></div>
+    </div>
+  </div>
+
+  <script>
+    let map, pickupAutocomplete, dropAutocomplete, pickupMarker, dropMarker, directionsService, directionsRenderer;
+
+    function initMap() {
+      map = new google.maps.Map(document.getElementById('map'), {
+        center: { lat: 17.3616, lng: 78.4747 },
+        zoom: 12
+      });
+
+      directionsService = new google.maps.DirectionsService();
+      directionsRenderer = new google.maps.DirectionsRenderer({ map: map, suppressMarkers: true });
+
+      pickupAutocomplete = new google.maps.places.Autocomplete(document.getElementById('pickup'), { types: ['geocode'] });
+      dropAutocomplete = new google.maps.places.Autocomplete(document.getElementById('drop'), { types: ['geocode'] });
+
+      pickupAutocomplete.addListener('place_changed', updateMap);
+      dropAutocomplete.addListener('place_changed', updateMap);
+    }
+
+    function updateMap() {
+      const pickupPlace = pickupAutocomplete.getPlace();
+      const dropPlace = dropAutocomplete.getPlace();
+      if (!pickupPlace.geometry || !dropPlace.geometry) return;
+
+      if (pickupMarker) pickupMarker.setMap(null);
+      if (dropMarker) dropMarker.setMap(null);
+
+      pickupMarker = new google.maps.Marker({ position: pickupPlace.geometry.location, map: map, title: 'Pickup' });
+      dropMarker = new google.maps.Marker({ position: dropPlace.geometry.location, map: map, title: 'Drop' });
+
+      const request = {
+        origin: pickupPlace.geometry.location,
+        destination: dropPlace.geometry.location,
+        travelMode: 'DRIVING'
+      };
+
+      directionsService.route(request, (result, status) => {
+        if (status == 'OK') {
+          directionsRenderer.setDirections(result);
+          map.fitBounds(result.routes[0].bounds);
+        }
+      });
+    }
+
+    function showError(message) {
+      const errorDiv = document.getElementById('error');
+      errorDiv.textContent = message;
+      errorDiv.style.display = 'block';
+      setTimeout(() => { errorDiv.style.display = 'none'; }, 5000);
+    }
+
+    function getFareEstimate() {
+      const pickupPlace = pickupAutocomplete.getPlace();
+      const dropPlace = dropAutocomplete.getPlace();
+      if (!pickupPlace.geometry || !dropPlace.geometry) {
+        showError('Please select valid pickup and drop locations');
+        return;
+      }
+
+      const origin = pickupPlace.geometry.location;
+      const destination = dropPlace.geometry.location;
+
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('results').innerHTML = '';
+      document.getElementById('error').style.display = 'none';
+
+      const request = {
+        origin,
+        destination,
+        travelMode: 'DRIVING'
+      };
+
+      directionsService.route(request, (result, status) => {
+        if (status === 'OK') {
+          directionsRenderer.setDirections(result);
+          map.fitBounds(result.routes[0].bounds);
+
+          const leg = result.routes[0].legs[0];
+          const distanceKm = leg.distance.value / 1000;
+          const durationMin = leg.duration.value / 60;
+
+          const olaOptions = [
+            { name: "Ola Auto", minFare: 45, maxFare: 55, eta: 6 },
+            { name: "Ola Mini", minFare: 90, maxFare: 110, eta: 2 },
+            { name: "Ola Bike", minFare: 35, maxFare: 50, eta: 5 },
+            { name: "Ola Prime Sedan", minFare: 120, maxFare: 150, eta: 2 },
+            { name: "Ola Prime SUV", minFare: 180, maxFare: 210, eta: 2 }
+          ];
+
+          let output = `<div class="provider-title">🚖 Ola</div>`;
+
+          olaOptions.forEach(option => {
+            output += `
+              <div class="fare-item">
+                <h4>${option.name}</h4>
+                <p><strong>Estimated Fare:</strong> ₹${option.minFare} – ₹${option.maxFare}</p>
+                <p><strong>Distance:</strong> ${distanceKm.toFixed(1)} km</p>
+                <p><strong>Duration:</strong> ${Math.round(durationMin)} minutes</p>
+                <p><strong>ETA:</strong> ${option.eta} mins</p>
+              </div>
+            `;
+          });
+
+          document.getElementById('results').innerHTML = output;
+        } else {
+          showError('Could not calculate directions.');
+        }
+
+        document.getElementById('loading').style.display = 'none';
+      });
+    }
+
+    window.onload = initMap;
+  </script>
+</body>
+</html>

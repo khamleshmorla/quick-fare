@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ride Fare Comparison</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Animate.css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <!-- Anime.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <!-- Google Maps API -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDPrJsx1qkMrAvYwkMMT6Gs6YMWarej_gs&libraries=places"></script>
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a365d, #2d3748);
+            color: #fff;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.5s ease;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+        }
+        .input-field {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+        .input-field::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .input-field:focus {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.4);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+        }
+        .autocomplete-list {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            width: 100%;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        .autocomplete-list div {
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .autocomplete-list div:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        .dark-mode {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: #e5e7eb;
+        }
+        .promo-banner {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 165, 0, 0.1));
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            text-align: center;
+            width: 100%;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            box-shadow: 0 8px 32px rgba(255, 215, 0, 0.1);
+        }
+        .nav-link {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -4px;
+            left: 0;
+            background: #f59e0b;
+            transition: width 0.3s ease;
+        }
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        .nav-link.active {
+            color: #f59e0b;
+        }
+        .nav-link.active::after {
+            width: 100%;
+        }
+        .feature-tag {
+            background: rgba(255, 215, 0, 0.2);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        .feature-tag:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 215, 0, 0.3);
+        }
+        .section {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s ease;
+        }
+        .section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .location-results {
+            position: absolute;
+            width: 100%;
+            max-height: 200px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 1000;
+            margin-top: 4px;
+        }
+
+        .location-results div {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+
+        .location-results div:hover {
+            background-color: #f5f5f5;
+        }
+
+        .location-results div:last-child {
+            border-bottom: none;
+        }
+        .hero-text {
+            text-shadow: 0 2px 15px rgba(255, 255, 255, 0.6);
+            letter-spacing: 1px;
+            background: linear-gradient(90deg, #fff, #e5e7eb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .animate-in {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- Enhanced Navbar -->
+    <nav class="bg-white/95 shadow-md p-4 flex justify-between items-center sticky top-0 z-50 w-full backdrop-blur-lg">
+        <h1 class="text-2xl font-bold text-black flex items-center">
+            <span class="text-yellow-500 mr-2">⚡</span>QuickFare
+        </h1>
+        <div class="flex space-x-8 text-black">
+            <a href="#home" class="nav-link hover:text-yellow-500 font-medium">Home</a>
+            <a href="#about" class="nav-link hover:text-yellow-500 font-medium">About</a>
+            <a href="#contact" class="nav-link hover:text-yellow-500 font-medium">Contact</a>
+            <a href="#faq" class="nav-link hover:text-yellow-500 font-medium">FAQ</a>
+        
+        </div>
+        <div class="flex items-center space-x-6">
+            <button id="darkModeToggle" class="text-black hover:text-yellow-500 transition-colors duration-300">🌙</button>
+            <a href="./login.html" class="bg-yellow-400 text-gray-900 px-4 py-2 rounded-lg hover:bg-yellow-500 transition font-bold transform hover:scale-105 duration-200">
+                Login
+            </a>
+        </div>
+    </nav>
+
+    <!-- Home Section -->
+    <section id="home" class="py-12 section">
+        <!-- Promotional Banner -->
+        <div class="promo-banner animate__animated animate__fadeIn">
+            <h2 class="text-4xl font-extrabold text-white">Save More with QuickFare!</h2>
+            <p class="text-xl text-gray-200 mt-3">Instantly compare fares across Ola, Uber, and Rapido to find the best deal for your ride.</p>
+            <div class="mt-6 flex justify-center space-x-6">
+                <span class="feature-tag text-base text-gray-900 py-2 px-4 rounded-full font-semibold">Fast</span>
+                <span class="feature-tag text-base text-gray-900 py-2 px-4 rounded-full font-semibold">Reliable</span>
+                <span class="feature-tag text-base text-gray-900 py-2 px-4 rounded-full font-semibold">Free</span>
+            </div>
+        </div>
+
+        <!-- Compare Form -->
+        <div class="flex flex-col items-center justify-center p-6 mt-8">
+            <div class="glass-card w-full max-w-md">
+                <h2 class="text-3xl font-bold text-center mb-6">Compare and Save</h2>
+                
+                <div class="space-y-6">
+                    <div class="relative">
+                        <label for="pickup" class="block text-sm font-semibold text-gray-200">📍 Pickup Location</label>
+                        <input type="text" id="pickup" placeholder="Enter Pickup Location"
+                            class="w-full p-3 rounded-lg input-field">
+                        <div id="pickup-results" class="location-results hidden"></div>
+                    </div>
+                    
+                    <div class="relative">
+                        <label for="drop" class="block text-sm font-semibold text-gray-200">📍 Drop Location</label>
+                        <input type="text" id="drop" placeholder="Enter Drop Location"
+                            class="w-full p-3 rounded-lg input-field">
+                        <div id="drop-results" class="location-results hidden"></div>
+                    </div>
+                    
+                    <div class="relative">
+                        <label for="rideType" class="block text-sm font-semibold text-gray-200 mb-2">🚘 Ride Type</label>
+                        <select id="rideType" class="w-full p-3 rounded-lg input-field bg-gray-800 text-white">
+                            <option value="bike" class="bg-gray-800 text-white">🏍️ Bike</option>
+                            <option value="auto" class="bg-gray-800 text-white">🛺 Auto</option>
+                            <option value="car" class="bg-gray-800 text-white">🚗 Car</option>
+                        </select>
+                    </div>
+
+                    <div id="carOptions" class="hidden mt-4">
+                        <label class="block text-sm font-semibold text-gray-200 mb-2">🚗 Car Options</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" onclick="selectCarType('mini')" class="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white text-sm">
+                                🚗 Mini/Go
+                            </button>
+                            <button type="button" onclick="selectCarType('sedan')" class="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white text-sm">
+                                🚙 Sedan/Premier
+                            </button>
+                            <button type="button" onclick="selectCarType('prime')" class="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white text-sm">
+                                🚗 Prime/XL
+                            </button>
+                            <button type="button" onclick="selectCarType('luxury')" class="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white text-sm">
+                                🏎️ Luxury/Black
+                            </button>
+                        </div>
+                    </div>
+
+                    <button onclick="redirectToResults()" 
+                        class="w-full bg-yellow-400 text-gray-900 py-3 rounded-lg hover:bg-yellow-500 transition font-bold transform hover:scale-105 duration-200 shadow-lg hover:shadow-xl">
+                        Compare Fares 🚀
+                    </button>
+                </div>
+                <p class="text-xs text-gray-300 mt-4 text-center">*Fares may vary due to surge pricing or traffic conditions.</p>
+            </div>
+
+            <!-- Recent Searches -->
+            <div class="mt-8 text-center glass-card w-full max-w-md">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold">Recent Searches</h3>
+                    <button onclick="clearHistory()" class="text-red-400 hover:text-red-500 transition-colors">
+                        <i class="fas fa-trash"></i> Clear History
+                    </button>
+                </div>
+                <div id="recent-searches" class="text-gray-200 space-y-1 text-sm max-h-32 overflow-y-auto"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="py-12 section">
+        <div class="max-w-4xl mx-auto text-center glass-card">
+            <h2 class="text-3xl font-bold mb-6">Why Choose QuickFare?</h2>
+            <p class="text-lg text-gray-200">Save time and money with our fast, reliable fare comparison tool. We aggregate data from top ride-hailing apps to help you make the best choice.</p>
+            <p class="text-lg text-gray-200 mt-4">Our mission is to simplify your travel decisions by providing real-time comparisons across Ola, Uber, and Rapido—all in one place.</p>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="py-12 section">
+        <div class="max-w-4xl mx-auto text-center glass-card">
+            <h2 class="text-3xl font-bold mb-6">Get in Touch</h2>
+            <p class="text-lg text-gray-200 mb-6">Have questions or feedback? We'd love to hear from you!</p>
+            <form class="space-y-4 max-w-md mx-auto">
+                <input type="text" placeholder="Your Name" class="w-full p-3 rounded-lg input-field" required>
+                <input type="email" placeholder="Your Email" class="w-full p-3 rounded-lg input-field" required>
+                <textarea placeholder="Your Message" class="w-full p-3 rounded-lg input-field h-32" required></textarea>
+                <button type="submit" class="w-full bg-yellow-400 text-gray-900 py-3 rounded-lg hover:bg-yellow-500 transition font-bold transform hover:scale-105 duration-200">
+                    Send Message
+                </button>
+            </form>
+            <p class="text-gray-300 mt-4">Or email us directly at: <a href="mailto:support@quickfare.com" class="text-yellow-400 hover:underline">support@quickfare.com</a></p>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq" class="py-12 section">
+        <div class="max-w-4xl mx-auto text-center glass-card">
+            <h2 class="text-3xl font-bold mb-6">Frequently Asked Questions</h2>
+            <div class="space-y-6 text-left">
+                <div class="glass-card">
+                    <h3 class="text-xl font-semibold mb-2">How does QuickFare work?</h3>
+                    <p class="text-gray-200">Enter your pickup and drop-off locations, select a ride type, and we'll show you fare comparisons from Ola, Uber, and Rapido.</p>
+                </div>
+                <div class="glass-card">
+                    <h3 class="text-xl font-semibold mb-2">Is QuickFare free to use?</h3>
+                    <p class="text-gray-200">Yes, QuickFare is completely free for all users!</p>
+                </div>
+                <div class="glass-card">
+                    <h3 class="text-xl font-semibold mb-2">Are the fares accurate?</h3>
+                    <p class="text-gray-200">Fares are estimates based on available data and may vary due to surge pricing or traffic conditions.</p>
+                </div>
+                <div class="glass-card">
+                    <h3 class="text-xl font-semibold mb-2">Can I book rides directly?</h3>
+                    <p class="text-gray-200">Yes, once you compare fares, you can book directly through the provider's app or website via our links.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-white/95 text-center p-6 shadow-md w-full mt-auto backdrop-blur-lg">
+        <p class="text-gray-700">© 2025 QuickFare. All rights reserved.</p>
+        <div class="mt-4 flex justify-center space-x-6">
+            <a href="#" class="text-gray-600 hover:text-yellow-500 transition-colors duration-300">Twitter</a>
+            <a href="#" class="text-gray-600 hover:text-yellow-500 transition-colors duration-300">LinkedIn</a>
+            <a href="#" class="text-gray-600 hover:text-yellow-500 transition-colors duration-300">GitHub</a>
+        </div>
+    </footer>
+
+    <script>
+        const LOCATIONIQ_ACCESS_TOKEN = "pk.6bcd4c22e6d2aca4f291848c4b66ae35";
+
+        // Dark Mode Toggle
+        document.getElementById('darkModeToggle').addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+        });
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+        }
+
+        // Smooth Scroll and Active Link Highlight
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href').substring(1);
+                const targetSection = document.getElementById(targetId);
+                targetSection.scrollIntoView({ behavior: 'smooth' });
+
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // Intersection Observer for Section Animations
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.section').forEach(section => {
+            observer.observe(section);
+        });
+
+        // Autocomplete Setup
+        function setupAutocomplete(inputId, resultsId) {
+            const input = document.getElementById(inputId);
+            const resultsDiv = document.getElementById(resultsId);
+            
+            // Create autocomplete instance
+            const autocomplete = new google.maps.places.Autocomplete(input, {
+                types: ['geocode', 'establishment'],
+                componentRestrictions: { country: 'in' },
+                fields: ['formatted_address', 'geometry', 'name']
+            });
+
+            // Show suggestions list
+            resultsDiv.classList.remove('hidden');
+            
+            // Handle input changes
+            input.addEventListener('input', function() {
+                if (this.value.length < 2) {
+                    resultsDiv.style.display = 'none';
+                    return;
+                }
+                resultsDiv.style.display = 'block';
+            });
+
+            // Handle place selection
+            autocomplete.addListener('place_changed', function() {
+                const place = autocomplete.getPlace();
+                if (!place.geometry) {
+                    console.log("No details available for input: '" + place.name + "'");
+                    return;
+                }
+                
+                // Update input with formatted address
+                input.value = place.formatted_address;
+                resultsDiv.style.display = 'none';
+            });
+
+            // Close suggestions when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!input.contains(e.target) && !resultsDiv.contains(e.target)) {
+                    resultsDiv.style.display = 'none';
+                }
+            });
+        }
+
+        // Redirect to Results with Recent Searches
+        function redirectToResults() {
+            const pickup = document.getElementById("pickup").value;
+            const drop = document.getElementById("drop").value;
+            const rideType = document.getElementById("rideType").value;
+
+            if (!pickup || !drop) {
+                alert("Please enter both pickup and drop locations.");
+                return;
+            }
+
+            const recentSearches = JSON.parse(localStorage.getItem('recentSearches') || '[]');
+            recentSearches.unshift(`${pickup} → ${drop} (${rideType})`);
+            if (recentSearches.length > 5) recentSearches.pop();
+            localStorage.setItem('recentSearches', JSON.stringify(recentSearches));
+            updateRecentSearches();
+
+            window.location.href = `fare-results.html?pickup=${encodeURIComponent(pickup)}&drop=${encodeURIComponent(drop)}&rideType=${rideType}`;
+        }
+
+        // Update Recent Searches List
+        function updateRecentSearches() {
+            const recentSearches = JSON.parse(localStorage.getItem('recentSearches') || '[]');
+            const container = document.getElementById('recent-searches');
+            container.innerHTML = '';
+            
+            if (recentSearches.length === 0) {
+                container.innerHTML = '<p class="text-gray-400">No recent searches</p>';
+                return;
+            }
+
+            recentSearches.forEach(search => {
+                const div = document.createElement('div');
+                div.className = 'flex justify-between items-center p-2 hover:bg-gray-800/50 rounded-lg';
+                
+                const text = document.createElement('span');
+                text.textContent = search;
+                text.className = 'truncate';
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.innerHTML = '<i class="fas fa-times text-red-400 hover:text-red-500"></i>';
+                deleteBtn.onclick = () => deleteSearch(search);
+                
+                div.appendChild(text);
+                div.appendChild(deleteBtn);
+                container.appendChild(div);
+            });
+        }
+
+        // Clear all history
+        function clearHistory() {
+            localStorage.removeItem('recentSearches');
+            updateRecentSearches();
+        }
+
+        // Delete single search
+        function deleteSearch(search) {
+            const recentSearches = JSON.parse(localStorage.getItem('recentSearches') || '[]');
+            const index = recentSearches.indexOf(search);
+            if (index > -1) {
+                recentSearches.splice(index, 1);
+                localStorage.setItem('recentSearches', JSON.stringify(recentSearches));
+                updateRecentSearches();
+            }
+        }
+
+        // Handle car type selection
+        function selectCarType(type) {
+            document.getElementById('rideType').value = type;
+            document.getElementById('carOptions').classList.add('hidden');
+        }
+
+        // Show car options when car is selected
+        document.getElementById('rideType').addEventListener('change', function() {
+            const carOptions = document.getElementById('carOptions');
+            if (this.value === 'car') {
+                carOptions.classList.remove('hidden');
+            } else {
+                carOptions.classList.add('hidden');
+            }
+        });
+
+        // Initialize
+        setupAutocomplete("pickup", "pickup-results");
+        setupAutocomplete("drop", "drop-results");
+        updateRecentSearches();
+
+        // Set Home as active by default
+        document.querySelector('a[href="#home"]').classList.add('active');
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB7RpuR7GyYHPYm2S2njTMoNl6L2M5wYr8",
+            authDomain: "quickfare-ff3bf.firebaseapp.com",
+            projectId: "quickfare-ff3bf",
+            storageBucket: "quickfare-ff3bf.firebasestorage.app",
+            messagingSenderId: "794116281045",
+            appId: "1:794116281045:web:fcd3f38e7507a9c73a885c",
+            measurementId: "G-JR9ZHBWPV7"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Check authentication state
+        auth.onAuthStateChanged((user) => {
+            const loginButton = document.querySelector('a[href="./login.html"]');
+            if (user) {
+                // User is signed in
+                loginButton.textContent = 'Profile';
+                loginButton.href = './profile.html';
+            } else {
+                // User is signed out
+                loginButton.textContent = 'Login';
+                loginButton.href = './login.html';
+            }
+        });
+
+        // Initialize animations
+        document.addEventListener('DOMContentLoaded', function() {
+            // Hero text animation
+            anime({
+                targets: '.hero-text',
+                opacity: [0, 1],
+                translateY: [20, 0],
+                duration: 1000,
+                easing: 'easeOutExpo',
+                delay: 200
+            });
+
+            // Glass card animation
+            anime({
+                targets: '.glass-card',
+                opacity: [0, 1],
+                translateY: [20, 0],
+                duration: 1000,
+                easing: 'easeOutExpo',
+                delay: anime.stagger(100)
+            });
+
+            // Feature tags animation
+            anime({
+                targets: '.feature-tag',
+                opacity: [0, 1],
+                translateY: [10, 0],
+                duration: 800,
+                easing: 'easeOutExpo',
+                delay: anime.stagger(100, {start: 1000})
+            });
+
+            // Input field hover animation
+            document.querySelectorAll('.input-field').forEach(input => {
+                input.addEventListener('focus', () => {
+                    anime({
+                        targets: input,
+                        scale: 1.02,
+                        duration: 300,
+                        easing: 'easeOutExpo'
+                    });
+                });
+
+                input.addEventListener('blur', () => {
+                    anime({
+                        targets: input,
+                        scale: 1,
+                        duration: 300,
+                        easing: 'easeOutExpo'
+                    });
+                });
+            });
+
+            // Button hover animation
+            document.querySelectorAll('button').forEach(button => {
+                button.addEventListener('mouseenter', () => {
+                    anime({
+                        targets: button,
+                        scale: 1.05,
+                        duration: 300,
+                        easing: 'easeOutExpo'
+                    });
+                });
+
+                button.addEventListener('mouseleave', () => {
+                    anime({
+                        targets: button,
+                        scale: 1,
+                        duration: 300,
+                        easing: 'easeOutExpo'
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>

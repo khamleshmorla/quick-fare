@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - QuickFare</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Animate.css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a365d, #2d3748);
+            color: #fff;
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+        }
+        .input-field {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(5px);
+        }
+        .input-field::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .input-field:focus {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.4);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+        }
+        .dark-mode {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: #e5e7eb;
+        }
+        .nav-link {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -4px;
+            left: 0;
+            background: #f59e0b;
+            transition: width 0.3s ease;
+        }
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        .nav-link:hover {
+            color: #f59e0b;
+        }
+        .section {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s ease;
+        }
+        .section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .social-login {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .social-login:hover {
+            transform: translateY(-3px);
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+        .loading-spinner {
+            display: none;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .error-message {
+            display: none;
+            color: #ef4444;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+        .password-strength {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+        .password-strength-bar {
+            height: 100%;
+            width: 0;
+            transition: width 0.3s ease, background-color 0.3s ease;
+        }
+        .password-strength.weak .password-strength-bar {
+            width: 33%;
+            background-color: #ef4444;
+        }
+        .password-strength.medium .password-strength-bar {
+            width: 66%;
+            background-color: #f59e0b;
+        }
+        .password-strength.strong .password-strength-bar {
+            width: 100%;
+            background-color: #10b981;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+    <nav class="bg-white/95 shadow-md p-4 flex justify-between items-center sticky top-0 z-50 w-full backdrop-blur-lg">
+        <h1 class="text-2xl font-bold text-black flex items-center">
+            <span class="text-yellow-500 mr-2">⚡</span>QuickFare
+        </h1>
+        <div class="flex space-x-8 text-black">
+            <a href="./index.html#home" class="nav-link hover:text-yellow-500 font-medium">Home</a>
+            <a href="./index.html#about" class="nav-link hover:text-yellow-500 font-medium">About</a>
+            <a href="./index.html#contact" class="nav-link hover:text-yellow-500 font-medium">Contact</a>
+            <a href="./index.html#faq" class="nav-link hover:text-yellow-500 font-medium">FAQ</a>
+        </div>
+        <div class="flex items-center space-x-6">
+            <button id="darkModeToggle" class="text-black hover:text-yellow-500 transition-colors duration-300">🌙</button>
+        </div>
+    </nav>
+
+    <section class="flex-grow flex items-center justify-center px-6 py-12">
+        <div class="text-center max-w-md w-full">
+            <h2 class="text-4xl font-extrabold text-white mb-6 animate__animated animate__fadeIn">Create Account 🚀</h2>
+            <div class="glass-card">
+                <form id="signupForm" class="space-y-6">
+                    <div class="space-y-4">
+                        <div class="text-left">
+                            <label for="name" class="block text-sm font-semibold text-gray-200 mb-2">👤 Full Name</label>
+                            <input type="text" id="name" placeholder="Enter your full name" required
+                                class="w-full p-3 rounded-lg input-field">
+                            <div id="nameError" class="error-message"></div>
+                        </div>
+                        <div class="text-left">
+                            <label for="email" class="block text-sm font-semibold text-gray-200 mb-2">📧 Email</label>
+                            <input type="email" id="email" placeholder="Enter your email" required
+                                class="w-full p-3 rounded-lg input-field">
+                            <div id="emailError" class="error-message"></div>
+                        </div>
+                        <div class="text-left">
+                            <label for="phone" class="block text-sm font-semibold text-gray-200 mb-2">📱 Phone</label>
+                            <input type="tel" id="phone" placeholder="Enter your phone number" required
+                                class="w-full p-3 rounded-lg input-field">
+                            <div id="phoneError" class="error-message"></div>
+                        </div>
+                        <div class="text-left">
+                            <label for="password" class="block text-sm font-semibold text-gray-200 mb-2">🔒 Password</label>
+                            <input type="password" id="password" placeholder="Create a password" required
+                                class="w-full p-3 rounded-lg input-field">
+                            <div class="password-strength" id="passwordStrength">
+                                <div class="password-strength-bar"></div>
+                            </div>
+                            <div id="passwordError" class="error-message"></div>
+                        </div>
+                        <div class="text-left">
+                            <label for="confirmPassword" class="block text-sm font-semibold text-gray-200 mb-2">🔒 Confirm Password</label>
+                            <input type="password" id="confirmPassword" placeholder="Confirm your password" required
+                                class="w-full p-3 rounded-lg input-field">
+                            <div id="confirmPasswordError" class="error-message"></div>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="signupButton"
+                        class="w-full bg-yellow-400 text-gray-900 font-bold py-3 rounded-lg hover:bg-yellow-500 transition duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center">
+                        <span id="signupText">Sign Up</span>
+                        <div id="signupSpinner" class="loading-spinner ml-2"></div>
+                    </button>
+
+                    <div class="relative">
+                        <div class="absolute inset-0 flex items-center">
+                            <div class="w-full border-t border-gray-300"></div>
+                        </div>
+                        <div class="relative flex justify-center text-sm">
+                            <span class="px-2 bg-gray-800 text-gray-300">Or continue with</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-4">
+                        <button type="button" class="social-login p-3 rounded-lg flex items-center justify-center">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google" class="h-5">
+                        </button>
+                        <button type="button" class="social-login p-3 rounded-lg flex items-center justify-center">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/0/05/Facebook_Logo_%282019%29.png" alt="Facebook" class="h-5">
+                        </button>
+                        <button type="button" class="social-login p-3 rounded-lg flex items-center justify-center">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/6/6f/Apple_logo_black.svg" alt="Apple" class="h-5">
+                        </button>
+                    </div>
+
+                    <p class="text-gray-300 text-sm">
+                        Already have an account? 
+                        <a href="./login.html" class="text-yellow-400 hover:text-yellow-500 transition-colors">Login</a>
+                    </p>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <footer class="bg-white/95 text-center p-6 shadow-md w-full mt-auto backdrop-blur-lg">
+        <p class="text-gray-700">© 2025 QuickFare. All rights reserved.</p>
+        <div class="mt-4 flex justify-center space-x-6">
+            <a href="#" class="text-gray-600 hover:text-yellow-500 transition-colors duration-300">Twitter</a>
+            <a href="#" class="text-gray-600 hover:text-yellow-500 transition-colors duration-300">LinkedIn</a>
+            <a href="#" class="text-gray-600 hover:text-yellow-500 transition-colors duration-300">GitHub</a>
+        </div>
+    </footer>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB7RpuR7GyYHPYm2S2njTMoNl6L2M5wYr8",
+            authDomain: "quickfare-ff3bf.firebaseapp.com",
+            projectId: "quickfare-ff3bf",
+            storageBucket: "quickfare-ff3bf.firebasestorage.app",
+            messagingSenderId: "794116281045",
+            appId: "1:794116281045:web:fcd3f38e7507a9c73a885c",
+            measurementId: "G-JR9ZHBWPV7"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Dark Mode Toggle
+        document.getElementById('darkModeToggle').addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+        });
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+        }
+
+        // Password Strength Indicator
+        document.getElementById('password').addEventListener('input', function() {
+            const password = this.value;
+            const strengthBar = document.getElementById('passwordStrength');
+            const strength = calculatePasswordStrength(password);
+            
+            strengthBar.className = 'password-strength';
+            strengthBar.classList.add(strength);
+        });
+
+        function calculatePasswordStrength(password) {
+            let strength = 0;
+            
+            if (password.length >= 8) strength++;
+            if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength++;
+            if (password.match(/\d/)) strength++;
+            if (password.match(/[^a-zA-Z\d]/)) strength++;
+            
+            if (strength <= 1) return 'weak';
+            if (strength <= 3) return 'medium';
+            return 'strong';
+        }
+
+        // Check if user is already logged in
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                // Only redirect if not already on profile or signup page
+                if (!window.location.pathname.includes('profile.html') && 
+                    !window.location.pathname.includes('signup.html')) {
+                    window.location.href = './profile.html';
+                }
+            }
+        });
+
+        // Form Submission
+        document.getElementById('signupForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Reset error messages
+            document.querySelectorAll('.error-message').forEach(el => {
+                el.style.display = 'none';
+            });
+            
+            // Get form values
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            // Validate password match
+            if (password !== confirmPassword) {
+                document.getElementById('confirmPasswordError').textContent = 'Passwords do not match';
+                document.getElementById('confirmPasswordError').style.display = 'block';
+                return;
+            }
+            
+            // Show loading state
+            const signupButton = document.getElementById('signupButton');
+            const signupText = document.getElementById('signupText');
+            const signupSpinner = document.getElementById('signupSpinner');
+            
+            signupButton.disabled = true;
+            signupText.textContent = 'Creating account...';
+            signupSpinner.style.display = 'block';
+            
+            try {
+                // Create user with email and password
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+                
+                // Update user profile
+                await user.updateProfile({
+                    displayName: name
+                });
+                
+                // Create user document in Firestore
+                await db.collection('users').doc(user.uid).set({
+                    name,
+                    email,
+                    phone,
+                    totalRides: 0,
+                    moneySaved: 0,
+                    savedLocations: [],
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                // Store user data in localStorage
+                localStorage.setItem('user', JSON.stringify({
+                    uid: user.uid,
+                    email: user.email,
+                    displayName: name,
+                    phone,
+                    totalRides: 0,
+                    moneySaved: 0,
+                    savedLocations: []
+                }));
+                
+                // Redirect to profile page
+                window.location.href = './profile.html';
+            } catch (error) {
+                console.error('Signup error:', error);
+                
+                // Show appropriate error message
+                let errorMessage = 'Signup failed. Please try again.';
+                let errorElement = null;
+                
+                if (error.code === 'auth/email-already-in-use') {
+                    errorMessage = 'Email is already in use.';
+                    errorElement = document.getElementById('emailError');
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = 'Invalid email address.';
+                    errorElement = document.getElementById('emailError');
+                } else if (error.code === 'auth/weak-password') {
+                    errorMessage = 'Password is too weak.';
+                    errorElement = document.getElementById('passwordError');
+                }
+                
+                if (errorElement) {
+                    errorElement.textContent = errorMessage;
+                    errorElement.style.display = 'block';
+                } else {
+                    alert(errorMessage);
+                }
+            } finally {
+                // Reset button state
+                signupButton.disabled = false;
+                signupText.textContent = 'Sign Up';
+                signupSpinner.style.display = 'none';
+            }
+        });
+
+        // Social Signup Handlers
+        const googleProvider = new firebase.auth.GoogleAuthProvider();
+        const facebookProvider = new firebase.auth.FacebookAuthProvider();
+        const appleProvider = new firebase.auth.OAuthProvider('apple.com');
+
+        document.querySelectorAll('.social-login').forEach(button => {
+            button.addEventListener('click', async function() {
+                const service = this.querySelector('img').alt;
+                let provider;
+                
+                switch(service) {
+                    case 'Google':
+                        provider = googleProvider;
+                        break;
+                    case 'Facebook':
+                        provider = facebookProvider;
+                        break;
+                    case 'Apple':
+                        provider = appleProvider;
+                        break;
+                }
+                
+                try {
+                    const result = await auth.signInWithPopup(provider);
+                    const user = result.user;
+                    
+                    // Create user document in Firestore
+                    await db.collection('users').doc(user.uid).set({
+                        name: user.displayName,
+                        email: user.email,
+                        phone: '',
+                        totalRides: 0,
+                        moneySaved: 0,
+                        savedLocations: [],
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    // Store user data in localStorage
+                    localStorage.setItem('user', JSON.stringify({
+                        uid: user.uid,
+                        email: user.email,
+                        displayName: user.displayName,
+                        phone: '',
+                        totalRides: 0,
+                        moneySaved: 0,
+                        savedLocations: []
+                    }));
+                    
+                    window.location.href = './profile.html';
+                } catch (error) {
+                    console.error(`${service} signup error:`, error);
+                    alert(error.message);
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

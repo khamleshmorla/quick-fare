@@ -1,0 +1,15 @@
+{
+  "name": "ride-fare-comparison",
+  "version": "1.0.0",
+  "description": "A fare comparison app for ride-hailing services",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "mongoose": "^8.1.0",
+    "axios": "^1.6.2"
+  }
+}

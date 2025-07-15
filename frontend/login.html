@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - QuickFare</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Animate.css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <!-- Anime.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a365d, #2d3748);
+            color: #fff;
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+        }
+        .input-field {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(5px);
+        }
+        .input-field::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .input-field:focus {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.4);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+        }
+        .dark-mode {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: #e5e7eb;
+        }
+        .nav-link {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -4px;
+            left: 0;
+            background: #f59e0b;
+            transition: width 0.3s ease;
+        }
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        .nav-link:hover {
+            color: #f59e0b;
+        }
+        .section {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s ease;
+        }
+        .section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .social-login {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        .social-login:hover {
+            transform: translateY(-3px);
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+        .loading-spinner {
+            display: none;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .error-message {
+            display: none;
+            color: #ef4444;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+        .animate-in {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+    <nav class="bg-white/95 shadow-md p-4 flex justify-between items-center sticky top-0 z-50 w-full backdrop-blur-lg">
+        <h1 class="text-2xl font-bold text-black flex items-center">
+            <span class="text-yellow-500 mr-2">⚡</span>QuickFare
+        </h1>
+        <div class="flex space-x-8 text-black">
+            <a href="./index.html#home" class="nav-link hover:text-yellow-500 font-medium">Home</a>
+            <a href="./index.html#about" class="nav-link hover:text-yellow-500 font-medium">About</a>
+            <a href="./index.html#contact" class="nav-link hover:text-yellow-500 font-medium">Contact</a>
+            <a href="./index.html#faq" class="nav-link hover:text-yellow-500 font-medium">FAQ</a>
+        </div>
+        <div class="flex items-center space-x-6">
+            <button id="darkModeToggle" class="text-black hover:text-yellow-500 transition-colors duration-300">🌙</button>
+        </div>
+    </nav>
+
+    <section class="flex-grow flex items-center justify-center px-6 py-12">
+        <div class="text-center max-w-md w-full">
+            <h2 class="text-4xl font-extrabold text-white mb-6 animate__animated animate__fadeIn">Welcome Back! 👋</h2>
+            <div class="glass-card">
+                <form id="loginForm" class="space-y-6">
+                    <div class="space-y-4">
+                        <div class="text-left">
+                            <label for="email" class="block text-sm font-semibold text-gray-200 mb-2">📧 Email</label>
+                            <input type="email" id="email" placeholder="Enter your email" required
+                                class="w-full p-3 rounded-lg input-field">
+                            <div id="emailError" class="error-message"></div>
+                        </div>
+                        <div class="text-left">
+                            <label for="password" class="block text-sm font-semibold text-gray-200 mb-2">🔒 Password</label>
+                            <input type="password" id="password" placeholder="Enter your password" required
+                                class="w-full p-3 rounded-lg input-field">
+                            <div id="passwordError" class="error-message"></div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center space-x-2 text-gray-300">
+                            <input type="checkbox" class="rounded text-yellow-500 focus:ring-yellow-500">
+                            <span class="text-sm">Remember me</span>
+                        </label>
+                        <a href="#" class="text-sm text-yellow-400 hover:text-yellow-500 transition-colors">Forgot password?</a>
+                    </div>
+
+                    <button type="submit" id="loginButton"
+                        class="w-full bg-yellow-400 text-gray-900 font-bold py-3 rounded-lg hover:bg-yellow-500 transition duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center">
+                        <span id="loginText">Login</span>
+                        <div id="loginSpinner" class="loading-spinner ml-2"></div>
+                    </button>
+
+                    <div class="relative">
+                        <div class="absolute inset-0 flex items-center">
+                            <div class="w-full border-t border-gray-300"></div>
+                        </div>
+                        <div class="relative flex justify-center text-sm">
+                            <span class="px-2 bg-gray-800 text-gray-300">Or continue with</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-4">
+                        <button type="button" class="social-login p-3 rounded-lg flex items-center justify-center">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google" class="h-5">
+                        </button>
+                        <button type="button" class="social-login p-3 rounded-lg flex items-center justify-center">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/0/05/Facebook_Logo_%282019%29.png" alt="Facebook" class="h-5">
+                        </button>
+                        <button type="button" class="social-login p-3 rounded-lg flex items-center justify-center">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/6/6f/Apple_logo_black.svg" alt="Apple" class="h-5">
+                        </button>
+                    </div>
+
+                    <p class="text-gray-300 text-sm">
+                        Don't have an account? 
+                        <a href="./signup.html" class="text-yellow-400 hover:text-yellow-500 transition-colors">Sign up</a>
+                    </p>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <footer class="bg-white/95 text-center p-6 shadow-md w-full mt-auto backdrop-blur-lg">
+        <p class="text-gray-700">© 2025 QuickFare. All rights reserved.</p>
+        <div class="mt-4 flex justify-center space-x-6">
+            <a href="#" class="text-gray-600 hover:text-yellow-500 transition-colors duration-300">Twitter</a>
+            <a href="#" class="text-gray-600 hover:text-yellow-500 transition-colors duration-300">LinkedIn</a>
+            <a href="#" class="text-gray-600 hover:text-yellow-500 transition-colors duration-300">GitHub</a>
+        </div>
+    </footer>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB7RpuR7GyYHPYm2S2njTMoNl6L2M5wYr8",
+            authDomain: "quickfare-ff3bf.firebaseapp.com",
+            projectId: "quickfare-ff3bf",
+            storageBucket: "quickfare-ff3bf.firebasestorage.app",
+            messagingSenderId: "794116281045",
+            appId: "1:794116281045:web:fcd3f38e7507a9c73a885c",
+            measurementId: "G-JR9ZHBWPV7"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Dark Mode Toggle
+        document.getElementById('darkModeToggle').addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+        });
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+        }
+
+        // Check if user is already logged in
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                // Only redirect if not already on profile or signup page
+                if (!window.location.pathname.includes('profile.html') && 
+                    !window.location.pathname.includes('signup.html')) {
+                    window.location.href = './profile.html';
+                }
+            }
+        });
+
+        // Form Submission
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Reset error messages
+            document.getElementById('emailError').style.display = 'none';
+            document.getElementById('passwordError').style.display = 'none';
+            
+            // Get form values
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            // Show loading state
+            const loginButton = document.getElementById('loginButton');
+            const loginText = document.getElementById('loginText');
+            const loginSpinner = document.getElementById('loginSpinner');
+            
+            loginButton.disabled = true;
+            loginText.textContent = 'Logging in...';
+            loginSpinner.style.display = 'block';
+            
+            try {
+                // Attempt to sign in
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+                
+                if (user) {
+                    // Get user data from Firestore
+                    const userDoc = await db.collection('users').doc(user.uid).get();
+                    const userData = userDoc.data();
+                    
+                    // Store user data in localStorage
+                    localStorage.setItem('user', JSON.stringify({
+                        uid: user.uid,
+                        email: user.email,
+                        displayName: user.displayName,
+                        phone: userData?.phone || '',
+                        totalRides: userData?.totalRides || 0,
+                        moneySaved: userData?.moneySaved || 0,
+                        savedLocations: userData?.savedLocations || []
+                    }));
+                    
+                    // Redirect to profile page
+                    window.location.href = './profile.html';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                
+                // Show appropriate error message
+                let errorMessage = 'Login failed. Please try again.';
+                let errorElement = null;
+                
+                if (error.code === 'auth/user-not-found') {
+                    errorMessage = 'No account found with this email.';
+                    errorElement = document.getElementById('emailError');
+                } else if (error.code === 'auth/wrong-password') {
+                    errorMessage = 'Incorrect password.';
+                    errorElement = document.getElementById('passwordError');
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = 'Invalid email address.';
+                    errorElement = document.getElementById('emailError');
+                } else if (error.code === 'auth/too-many-requests') {
+                    errorMessage = 'Too many failed attempts. Please try again later.';
+                }
+                
+                if (errorElement) {
+                    errorElement.textContent = errorMessage;
+                    errorElement.style.display = 'block';
+                } else {
+                    alert(errorMessage);
+                }
+            } finally {
+                // Reset button state
+                loginButton.disabled = false;
+                loginText.textContent = 'Login';
+                loginSpinner.style.display = 'none';
+            }
+        });
+
+        // Social Login Handlers
+        const googleProvider = new firebase.auth.GoogleAuthProvider();
+        const facebookProvider = new firebase.auth.FacebookAuthProvider();
+        const appleProvider = new firebase.auth.OAuthProvider('apple.com');
+
+        document.querySelectorAll('.social-login').forEach(button => {
+            button.addEventListener('click', async function() {
+                const service = this.querySelector('img').alt;
+                let provider;
+                
+                switch(service) {
+                    case 'Google':
+                        provider = googleProvider;
+                        break;
+                    case 'Facebook':
+                        provider = facebookProvider;
+                        break;
+                    case 'Apple':
+                        provider = appleProvider;
+                        break;
+                }
+                
+                try {
+                    const result = await auth.signInWithPopup(provider);
+                    const user = result.user;
+                    
+                    // Check if user exists in Firestore
+                    const userDoc = await db.collection('users').doc(user.uid).get();
+                    
+                    if (!userDoc.exists) {
+                        // Create new user profile
+                        await db.collection('users').doc(user.uid).set({
+                            name: user.displayName,
+                            email: user.email,
+                            phone: '',
+                            totalRides: 0,
+                            moneySaved: 0,
+                            savedLocations: [],
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    }
+                    
+                    // Store user data in localStorage
+                    localStorage.setItem('user', JSON.stringify({
+                        uid: user.uid,
+                        email: user.email,
+                        displayName: user.displayName,
+                        phone: userDoc.data()?.phone || '',
+                        totalRides: userDoc.data()?.totalRides || 0,
+                        moneySaved: userDoc.data()?.moneySaved || 0,
+                        savedLocations: userDoc.data()?.savedLocations || []
+                    }));
+                    
+                    window.location.href = './profile.html';
+                } catch (error) {
+                    console.error(`${service} login error:`, error);
+                    alert(error.message);
+                }
+            });
+        });
+
+        // Initialize animations
+        document.addEventListener('DOMContentLoaded', function() {
+            // Glass card animation
+            anime({
+                targets: '.glass-card',
+                opacity: [0, 1],
+                translateY: [20, 0],
+                duration: 1000,
+                easing: 'easeOutExpo',
+                delay: 200
+            });
+
+            // Social login buttons animation
+            anime({
+                targets: '.social-login',
+                opacity: [0, 1],
+                translateY: [10, 0],
+                duration: 800,
+                easing: 'easeOutExpo',
+                delay: anime.stagger(100, {start: 1000})
+            });
+
+            // Input field hover animation
+            document.querySelectorAll('.input-field').forEach(input => {
+                input.addEventListener('focus', () => {
+                    anime({
+                        targets: input,
+                        scale: 1.02,
+                        duration: 300,
+                        easing: 'easeOutExpo'
+                    });
+                });
+
+                input.addEventListener('blur', () => {
+                    anime({
+                        targets: input,
+                        scale: 1,
+                        duration: 300,
+                        easing: 'easeOutExpo'
+                    });
+                });
+            });
+
+            // Button hover animation
+            document.querySelectorAll('button').forEach(button => {
+                button.addEventListener('mouseenter', () => {
+                    anime({
+                        targets: button,
+                        scale: 1.05,
+                        duration: 300,
+                        easing: 'easeOutExpo'
+                    });
+                });
+
+                button.addEventListener('mouseleave', () => {
+                    anime({
+                        targets: button,
+                        scale: 1,
+                        duration: 300,
+                        easing: 'easeOutExpo'
+                    });
+                });
+            });
+
+            // Error message animation
+            window.showError = function(element, message) {
+                element.textContent = message;
+                element.style.display = 'block';
+                
+                anime({
+                    targets: element,
+                    translateX: [-10, 0],
+                    opacity: [0, 1],
+                    duration: 500,
+                    easing: 'easeOutExpo'
+                });
+            };
+        });
+    </script>
+</body>
+</html> 

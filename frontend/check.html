@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Distance Test</title>
+    <script>
+      function initMap() {
+        const service = new google.maps.DistanceMatrixService();
+        service.getDistanceMatrix(
+          {
+            origins: ["Vikarabad"],
+            destinations: ["Tandur"],
+            travelMode: 'DRIVING',
+            unitSystem: google.maps.UnitSystem.METRIC,
+          },
+          (response, status) => {
+            if (status === "OK") {
+              const element = response.rows[0].elements[0];
+              alert(`Distance: ${element.distance.text}, Duration: ${element.duration.text}`);
+            } else {
+              alert("Error: " + status);
+            }
+          }
+        );
+      }
+    </script>
+    <script
+      async
+      defer
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDPrJsx1qkMrAvYwkMMT6Gs6YMWarej_gs&callback=initMap"
+    ></script>
+  </head>
+  <body>
+    <h1>Testing Google Maps API</h1>
+  </body>
+</html>

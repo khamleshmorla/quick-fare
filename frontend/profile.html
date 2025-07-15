@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - QuickFare</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Animate.css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <!-- Anime.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a365d, #2d3748);
+            color: #fff;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.5s ease;
+            margin: 0;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+        }
+        .input-field {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+        .input-field::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .input-field:focus {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.4);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+        }
+        .dark-mode {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: #e5e7eb;
+        }
+        .nav-link {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -4px;
+            left: 0;
+            background: #f59e0b;
+            transition: width 0.3s ease;
+        }
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        .nav-link:hover {
+            color: #f59e0b;
+        }
+        .section {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s ease;
+        }
+        .section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .profile-stats {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .profile-stats:hover {
+            transform: translateY(-3px);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .saved-location {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1rem;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+        .saved-location:hover {
+            transform: translateX(5px);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 12px 24px;
+            color: white;
+            font-weight: 500;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        .toast.success {
+            border-left: 4px solid #10B981;
+        }
+        .toast.error {
+            border-left: 4px solid #EF4444;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .animate-in {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+    <nav class="bg-white/95 shadow-md p-4 flex justify-between items-center sticky top-0 z-50 w-full backdrop-blur-lg">
+        <h1 class="text-2xl font-bold text-black flex items-center">
+            <span class="text-yellow-500 mr-2">⚡</span>QuickFare
+        </h1>
+        <div class="flex space-x-8 text-black">
+            <a href="./index.html#home" class="nav-link hover:text-yellow-500 font-medium">Home</a>
+            <a href="./index.html#about" class="nav-link hover:text-yellow-500 font-medium">About</a>
+            <a href="./index.html#contact" class="nav-link hover:text-yellow-500 font-medium">Contact</a>
+            <a href="./index.html#faq" class="nav-link hover:text-yellow-500 font-medium">FAQ</a>
+            <a href="./profile.html" class="nav-link hover:text-yellow-500 font-medium">Profile</a>
+        </div>
+        <div class="flex items-center space-x-6">
+            <button id="darkModeToggle" class="text-black hover:text-yellow-500 transition-colors duration-300">🌙</button>
+            <button onclick="logout()" class="bg-red-400 text-gray-900 px-4 py-2 rounded-lg hover:bg-red-500 transition font-bold transform hover:scale-105 duration-200">
+                Logout
+            </button>
+        </div>
+    </nav>
+
+    <section class="flex-grow flex items-center justify-center px-6 py-12 section">
+        <div class="text-center max-w-4xl w-full">
+            <h2 class="text-4xl font-extrabold text-white mb-6 animate__animated animate__fadeIn">👤 Your Profile</h2>
+            
+            <!-- Profile Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="profile-stats">
+                    <h3 class="text-2xl font-bold text-yellow-400">12</h3>
+                    <p class="text-gray-300">Total Rides</p>
+                </div>
+                <div class="profile-stats">
+                    <h3 class="text-2xl font-bold text-yellow-400">₹1,250</h3>
+                    <p class="text-gray-300">Money Saved</p>
+                </div>
+                <div class="profile-stats">
+                    <h3 class="text-2xl font-bold text-yellow-400">5</h3>
+                    <p class="text-gray-300">Saved Locations</p>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- User Info -->
+                    <div class="space-y-6">
+                        <h3 class="text-2xl font-bold mb-4">Personal Information</h3>
+                        <div class="text-left">
+                            <label class="block text-sm font-semibold text-gray-200 mb-2">👤 Full Name</label>
+                            <input type="text" value="John Doe" class="w-full p-3 rounded-lg input-field">
+                        </div>
+                        <div class="text-left">
+                            <label class="block text-sm font-semibold text-gray-200 mb-2">📧 Email</label>
+                            <input type="email" value="john@example.com" class="w-full p-3 rounded-lg input-field">
+                        </div>
+                        <div class="text-left">
+                            <label class="block text-sm font-semibold text-gray-200 mb-2">📱 Phone</label>
+                            <input type="tel" value="+91 9876543210" class="w-full p-3 rounded-lg input-field">
+                </div>
+                        <button class="w-full bg-yellow-400 text-gray-900 font-bold py-3 rounded-lg hover:bg-yellow-500 transition duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
+                            Update Profile
+                </button>
+                    </div>
+
+                    <!-- Saved Locations -->
+                    <div class="space-y-6">
+                <h3 class="text-2xl font-bold mb-4">Saved Locations</h3>
+                        <div class="space-y-4">
+                            <div class="saved-location flex justify-between items-center">
+                                <div>
+                                    <h4 class="font-semibold">🏠 Home</h4>
+                                    <p class="text-sm text-gray-300">123 Main Street, City</p>
+                                </div>
+                                <button class="text-red-400 hover:text-red-500 transition-colors">Delete</button>
+                            </div>
+                            <div class="saved-location flex justify-between items-center">
+                                <div>
+                                    <h4 class="font-semibold">🏢 Office</h4>
+                                    <p class="text-sm text-gray-300">456 Business Park, City</p>
+                                </div>
+                                <button class="text-red-400 hover:text-red-500 transition-colors">Delete</button>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <input type="text" placeholder="Location Name" class="w-full p-3 rounded-lg input-field">
+                            <input type="text" placeholder="Address" class="w-full p-3 rounded-lg input-field">
+                            <button class="w-full bg-yellow-400 text-gray-900 font-bold py-3 rounded-lg hover:bg-yellow-500 transition duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
+                                Add Location
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="bg-white/95 text-center p-6 shadow-md w-full mt-auto backdrop-blur-lg">
+        <p class="text-gray-700">© 2025 QuickFare. All rights reserved.</p>
+        <div class="mt-4 flex justify-center space-x-6">
+            <a href="#" class="text-gray-600 hover:text-yellow-500 transition-colors duration-300">Twitter</a>
+            <a href="#" class="text-gray-600 hover:text-yellow-500 transition-colors duration-300">LinkedIn</a>
+            <a href="#" class="text-gray-600 hover:text-yellow-500 transition-colors duration-300">GitHub</a>
+        </div>
+    </footer>
+
+    <!-- Add Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Add Toast Container -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB7RpuR7GyYHPYm2S2njTMoNl6L2M5wYr8",
+            authDomain: "quickfare-ff3bf.firebaseapp.com",
+            projectId: "quickfare-ff3bf",
+            storageBucket: "quickfare-ff3bf.firebasestorage.app",
+            messagingSenderId: "794116281045",
+            appId: "1:794116281045:web:fcd3f38e7507a9c73a885c",
+            measurementId: "G-JR9ZHBWPV7"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Dark Mode Toggle
+        document.getElementById('darkModeToggle').addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+        });
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+        }
+
+        // Check if user is logged in
+        auth.onAuthStateChanged(async (user) => {
+            if (!user) {
+                // Only redirect if not already on login page
+                if (!window.location.pathname.includes('login.html') && 
+                    !window.location.pathname.includes('signup.html')) {
+                    window.location.href = './login.html';
+                }
+                return;
+            }
+
+            try {
+                // Get user data from Firestore
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                const userData = userDoc.data();
+
+                // Update profile information
+                document.querySelector('input[type="text"]').value = userData?.name || user.displayName || '';
+                document.querySelector('input[type="email"]').value = user.email || '';
+                document.querySelector('input[type="tel"]').value = userData?.phone || '';
+                
+                // Update statistics
+                document.querySelector('.profile-stats:nth-child(1) h3').textContent = userData?.totalRides || '0';
+                document.querySelector('.profile-stats:nth-child(2) h3').textContent = userData?.moneySaved ? `₹${userData.moneySaved}` : '₹0';
+                document.querySelector('.profile-stats:nth-child(3) h3').textContent = userData?.savedLocations?.length || '0';
+                
+                // Update saved locations
+                const locationsContainer = document.querySelector('.space-y-4');
+                if (userData?.savedLocations && userData.savedLocations.length > 0) {
+                    locationsContainer.innerHTML = userData.savedLocations.map(location => `
+                        <div class="saved-location flex justify-between items-center">
+                            <div>
+                                <h4 class="font-semibold">${location.name}</h4>
+                                <p class="text-sm text-gray-300">${location.pickup} → ${location.drop}</p>
+                            </div>
+                            <button class="text-red-400 hover:text-red-500 transition-colors" onclick="deleteLocation('${location.id}')">Delete</button>
+                        </div>
+                    `).join('');
+                } else {
+                    locationsContainer.innerHTML = '<p class="text-gray-300">No saved locations</p>';
+                }
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+                alert('Error loading profile data. Please try again.');
+            }
+        });
+
+        // Debug function
+        function debug(message) {
+            console.log(`[Debug] ${message}`);
+        }
+
+        // Show toast message
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type}`;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Show loading overlay
+        function showLoading() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        // Hide loading overlay
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
+        // Initialize buttons after DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            debug('DOM loaded, initializing buttons...');
+
+            // Update Profile Button
+            const updateProfileBtn = document.querySelector('button.bg-yellow-400');
+            if (updateProfileBtn) {
+                debug('Found update profile button');
+                updateProfileBtn.addEventListener('click', async function() {
+                    debug('Update profile button clicked');
+                    const name = document.querySelector('input[type="text"]').value;
+                    const email = document.querySelector('input[type="email"]').value;
+                    const phone = document.querySelector('input[type="tel"]').value;
+                    
+                    debug(`Form values: name=${name}, email=${email}, phone=${phone}`);
+                    
+                    if (!name || !email || !phone) {
+                        showToast('Please fill in all fields', 'error');
+                        return;
+                    }
+
+                    showLoading();
+                    
+                    try {
+                        const user = auth.currentUser;
+                        if (!user) throw new Error('User not logged in');
+                        debug('User authenticated, updating profile...');
+
+                        // Update user profile in Firebase Auth
+                        await user.updateProfile({
+                            displayName: name
+                        });
+                        debug('Firebase Auth profile updated');
+
+                        // Update user data in Firestore
+                        await db.collection('users').doc(user.uid).update({
+                            name,
+                            phone,
+                            email,
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        debug('Firestore data updated');
+
+                        // Update user data in localStorage
+                        const userData = {
+                            uid: user.uid,
+                            email: email,
+                            displayName: name,
+                            phone: phone,
+                            updatedAt: new Date().toISOString()
+                        };
+                        localStorage.setItem('user', JSON.stringify(userData));
+                        debug('LocalStorage updated');
+
+                        showToast('Profile updated successfully!');
+                        
+                        // Refresh the page to show updated data
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    } catch (error) {
+                        console.error('Update error:', error);
+                        showToast('Error updating profile: ' + error.message, 'error');
+                    } finally {
+                        hideLoading();
+                    }
+                });
+            } else {
+                debug('Update profile button not found!');
+            }
+
+            // Add Location Button
+            const addLocationBtn = document.querySelectorAll('button.bg-yellow-400')[1];
+            if (addLocationBtn) {
+                debug('Found add location button');
+                addLocationBtn.addEventListener('click', async function() {
+                    debug('Add location button clicked');
+                    const name = document.querySelectorAll('input[type="text"]')[1].value;
+                    const address = document.querySelectorAll('input[type="text"]')[2].value;
+                    
+                    debug(`Location values: name=${name}, address=${address}`);
+                    
+                    if (!name || !address) {
+                        showToast('Please enter both location name and address', 'error');
+                        return;
+                    }
+                    
+                    showLoading();
+                    
+                    try {
+                        const user = auth.currentUser;
+                        if (!user) throw new Error('User not logged in');
+                        debug('User authenticated, adding location...');
+
+                        const locationId = db.collection('locations').doc().id;
+                        const timestamp = new Date().toISOString();
+                        
+                        // Create location data without serverTimestamp
+                        const locationData = {
+                            id: locationId,
+                            name,
+                            address,
+                            userId: user.uid,
+                            createdAt: timestamp
+                        };
+
+                        // Add to locations collection
+                        await db.collection('locations').doc(locationId).set({
+                            ...locationData,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        debug('Location added to locations collection');
+
+                        // Check if user document exists
+                        const userDoc = await db.collection('users').doc(user.uid).get();
+                        if (!userDoc.exists) {
+                            // Create user document if it doesn't exist
+                            await db.collection('users').doc(user.uid).set({
+                                savedLocations: [],
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                            debug('Created new user document');
+                        }
+
+                        // Add to user's saved locations
+                        await db.collection('users').doc(user.uid).update({
+                            savedLocations: firebase.firestore.FieldValue.arrayUnion(locationData)
+                        });
+                        debug('Location added to user document');
+
+                        // Clear input fields
+                        document.querySelectorAll('input[type="text"]')[1].value = '';
+                        document.querySelectorAll('input[type="text"]')[2].value = '';
+
+                        showToast('Location added successfully!');
+                        
+                        // Refresh the page to show new location
+        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    } catch (error) {
+                        console.error('Add location error:', error);
+                        showToast('Error adding location: ' + error.message, 'error');
+                    } finally {
+                        hideLoading();
+                    }
+                });
+            } else {
+                debug('Add location button not found!');
+            }
+
+            // Delete location function
+            window.deleteLocation = async function(locationId) {
+                if (!confirm('Are you sure you want to delete this location?')) {
+                    return;
+                }
+
+                showLoading();
+                
+                try {
+                    const user = auth.currentUser;
+                    if (!user) throw new Error('User not logged in');
+
+                    // Get the location data first
+                    const userDoc = await db.collection('users').doc(user.uid).get();
+                    if (!userDoc.exists) {
+                        throw new Error('User document not found');
+                    }
+
+                    const savedLocations = userDoc.data()?.savedLocations || [];
+                    const locationToDelete = savedLocations.find(loc => loc.id === locationId);
+
+                    if (!locationToDelete) {
+                        throw new Error('Location not found');
+                    }
+
+                    // Create a clean copy of the location data without any Firestore-specific fields
+                    const cleanLocationData = {
+                        id: locationToDelete.id,
+                        name: locationToDelete.name,
+                        address: locationToDelete.address,
+                        userId: locationToDelete.userId,
+                        createdAt: locationToDelete.createdAt
+                    };
+
+                    // Remove from user's saved locations
+                    await db.collection('users').doc(user.uid).update({
+                        savedLocations: firebase.firestore.FieldValue.arrayRemove(cleanLocationData)
+                    });
+
+                    // Delete from locations collection
+                    await db.collection('locations').doc(locationId).delete();
+
+                    showToast('Location deleted successfully!');
+                    
+                    // Refresh the page to update the UI
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } catch (error) {
+                    console.error('Delete location error:', error);
+                    showToast('Error deleting location: ' + error.message, 'error');
+                } finally {
+                    hideLoading();
+                }
+            };
+
+            // Initialize animations
+            document.addEventListener('DOMContentLoaded', function() {
+                // Profile stats animation
+                anime({
+                    targets: '.profile-stats',
+                    opacity: [0, 1],
+                    translateY: [20, 0],
+                    duration: 1000,
+                    easing: 'easeOutExpo',
+                    delay: anime.stagger(100)
+                });
+
+                // Saved locations animation
+                anime({
+                    targets: '.saved-location',
+                    opacity: [0, 1],
+                    translateX: [-20, 0],
+                    duration: 800,
+                    easing: 'easeOutExpo',
+                    delay: anime.stagger(100, {start: 1000})
+                });
+
+                // Input field hover animation
+                document.querySelectorAll('.input-field').forEach(input => {
+                    input.addEventListener('focus', () => {
+                        anime({
+                            targets: input,
+                            scale: 1.02,
+                            duration: 300,
+                            easing: 'easeOutExpo'
+                        });
+                    });
+
+                    input.addEventListener('blur', () => {
+                        anime({
+                            targets: input,
+                            scale: 1,
+                            duration: 300,
+                            easing: 'easeOutExpo'
+                        });
+                    });
+                });
+
+                // Button hover animation
+                document.querySelectorAll('button').forEach(button => {
+                    button.addEventListener('mouseenter', () => {
+                        anime({
+                            targets: button,
+                            scale: 1.05,
+                            duration: 300,
+                            easing: 'easeOutExpo'
+                        });
+                    });
+
+                    button.addEventListener('mouseleave', () => {
+                        anime({
+                            targets: button,
+                            scale: 1,
+                            duration: 300,
+                            easing: 'easeOutExpo'
+                        });
+                    });
+                });
+
+                // Toast animation
+                window.showToast = function(message, type = 'success') {
+                    const toast = document.getElementById('toast');
+                    toast.textContent = message;
+                    toast.className = `toast ${type}`;
+                    
+                    anime({
+                        targets: toast,
+                        translateY: [100, 0],
+                        opacity: [0, 1],
+                        duration: 500,
+                        easing: 'easeOutExpo',
+                        complete: () => {
+                            setTimeout(() => {
+                                anime({
+                                    targets: toast,
+                                    translateY: [0, 100],
+                                    opacity: [1, 0],
+                                    duration: 500,
+                                    easing: 'easeInExpo'
+                                });
+                            }, 3000);
+                        }
+                    });
+                };
+            });
+        });
+
+        // Logout function
+        function logout() {
+            auth.signOut().then(() => {
+                localStorage.removeItem('user');
+                window.location.href = './login.html';
+            }).catch((error) => {
+                console.error('Logout error:', error);
+                alert('Error logging out. Please try again.');
+            });
+        }
+
+        // Intersection Observer for Section Animations
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.section').forEach(section => {
+            observer.observe(section);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - QuickFare</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for Modern Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Animate.css for smooth animations -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <!-- Anime.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a365d, #2d3748);
+            color: #fff;
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            overflow-x: hidden;
+        }
+        .dark-mode {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: #e5e7eb;
+        }
+        .dark-mode .text-black {
+            color: #000000; /* Keep navbar/footer text black */
+        }
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .navbar:hover {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        .hero-text {
+            text-shadow: 0 2px 15px rgba(255, 255, 255, 0.6);
+            letter-spacing: 1px;
+            background: linear-gradient(90deg, #fff, #e5e7eb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .carousel {
+            position: relative;
+            max-width: 600px;
+            margin: 0 auto;
+            overflow: hidden;
+            border-radius: 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            transform: perspective(1000px) rotateY(0deg);
+            transition: transform 0.5s ease;
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        .carousel:hover {
+            transform: perspective(1000px) rotateY(5deg);
+        }
+        .carousel-inner {
+            display: flex;
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .carousel-item {
+            min-width: 100%;
+            position: relative;
+            transition: all 0.5s ease;
+        }
+        .carousel-item img {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            border-radius: 20px;
+            transition: transform 0.5s ease;
+        }
+        .carousel-item:hover img {
+            transform: scale(1.05);
+        }
+        .carousel-caption {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 12px 24px;
+            border-radius: 12px;
+            color: #fff;
+            font-weight: 600;
+            backdrop-filter: blur(5px);
+            transform: translateY(0);
+            transition: transform 0.3s ease;
+        }
+        .carousel-item:hover .carousel-caption {
+            transform: translateY(-5px);
+        }
+        .highlight-button {
+            background: linear-gradient(90deg, #facc15, #f59e0b);
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .highlight-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.5s;
+        }
+        .highlight-button:hover::before {
+            left: 100%;
+        }
+        .highlight-button:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.7);
+        }
+        .social-link {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .social-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -4px;
+            left: 0;
+            background: #f59e0b;
+            transition: width 0.3s ease;
+        }
+        .social-link:hover::after {
+            width: 100%;
+        }
+        .feature-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        .animate-in {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+    <!-- Enhanced Navbar -->
+    <nav class="navbar shadow-md p-6 flex justify-between items-center sticky top-0 z-50 w-full">
+        <h1 class="text-3xl font-bold text-black flex items-center">
+            <span class="text-yellow-500 mr-2">⚡</span>QuickFare
+        </h1>
+        <div class="flex items-center space-x-8">
+            <button id="darkModeToggle" class="text-black hover:text-yellow-500 text-2xl transition-colors duration-300">🌙</button>
+        </div>
+    </nav>
+
+    <!-- Enhanced Hero Section -->
+    <section class="text-center py-24 animate__animated animate__fadeIn">
+        <h2 class="text-5xl md:text-7xl font-extrabold hero-text mb-6">Discover the Best Ride Deals</h2>
+        <p class="text-xl md:text-2xl text-gray-200 mt-6 max-w-2xl mx-auto leading-relaxed">
+            Your one-stop solution to compare Ola, Uber, and Rapido fares in real-time.
+            Save money and time with our intelligent fare comparison system.
+        </p>
+        <button onclick="window.location.href = 'index.html'" 
+                class="mt-10 bg-yellow-400 text-gray-900 py-4 px-10 rounded-full font-semibold text-lg highlight-button">
+            Get Started Now
+        </button>
+    </section>
+
+    <!-- Features Section -->
+    <section class="py-16 px-6">
+        <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="feature-card animate__animated animate__fadeInUp">
+                <h3 class="text-2xl font-bold mb-4">Real-time Comparison</h3>
+                <p class="text-gray-300">Compare fares across multiple ride services instantly.</p>
+            </div>
+            <div class="feature-card animate__animated animate__fadeInUp" style="animation-delay: 0.2s">
+                <h3 class="text-2xl font-bold mb-4">Best Deals</h3>
+                <p class="text-gray-300">Find the most affordable options for your journey.</p>
+            </div>
+            <div class="feature-card animate__animated animate__fadeInUp" style="animation-delay: 0.4s">
+                <h3 class="text-2xl font-bold mb-4">Easy Booking</h3>
+                <p class="text-gray-300">Book your ride directly through our platform.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Enhanced Carousel Section -->
+    <section id="carousel-section" class="flex-grow flex items-center justify-center px-6 py-16">
+        <div class="text-center max-w-4xl w-full">
+            <h3 class="text-4xl font-bold text-white mb-10 animate__animated animate__fadeIn">Our Trusted Partners</h3>
+            <div class="carousel">
+                <div class="carousel-inner" id="carousel-inner">
+                    <div class="carousel-item">
+                        <img src="../images/ola2.jpg" alt="Ola">
+                        <div class="carousel-caption">Ola - Affordable Rides</div>
+                    </div>
+                    <div class="carousel-item">
+                        <img src="../images/Rapido2.webp" alt="Rapido">
+                        <div class="carousel-caption">Rapido - Quick Bikes</div>
+                    </div>
+                    <div class="carousel-item">
+                        <img src="../images/uber.jpg" alt="Uber">
+                        <div class="carousel-caption">Uber - Global Comfort</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Enhanced Footer -->
+    <footer class="text-center p-8 shadow-md w-full mt-auto bg-white/95 backdrop-blur-lg">
+        <p class="text-gray-700 text-lg font-medium">© 2025 QuickFare. All rights reserved.</p>
+        <div class="mt-6 flex justify-center space-x-8">
+            <a href="#" class="text-gray-600 hover:text-yellow-500 social-link font-medium">Twitter</a>
+            <a href="#" class="text-gray-600 hover:text-yellow-500 social-link font-medium">LinkedIn</a>
+            <a href="#" class="text-gray-600 hover:text-yellow-500 social-link font-medium">GitHub</a>
+        </div>
+    </footer>
+
+    <script>
+        // Dark Mode Toggle with Smooth Transition
+        document.getElementById('darkModeToggle').addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+        });
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+        }
+
+        // Enhanced Carousel Functionality
+        const carouselInner = document.getElementById('carousel-inner');
+        const items = carouselInner.getElementsByClassName('carousel-item');
+        let currentIndex = 0;
+        let isAnimating = false;
+
+        function showNextSlide() {
+            if (isAnimating) return;
+            isAnimating = true;
+            
+            currentIndex = (currentIndex + 1) % items.length;
+            const offset = -currentIndex * 100;
+            
+            carouselInner.style.transform = `translateX(${offset}%)`;
+            
+            setTimeout(() => {
+                isAnimating = false;
+            }, 500);
+        }
+
+        // Auto-rotate every 4 seconds
+        setInterval(showNextSlide, 4000);
+
+        // Initial position
+        carouselInner.style.transform = 'translateX(0%)';
+
+        // Add scroll reveal animations
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animate__animated', 'animate__fadeInUp');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.feature-card').forEach(card => {
+            observer.observe(card);
+        });
+
+        // Initialize animations
+        document.addEventListener('DOMContentLoaded', function() {
+            // Hero text animation
+            anime({
+                targets: '.hero-text',
+                opacity: [0, 1],
+                translateY: [20, 0],
+                duration: 1000,
+                easing: 'easeOutExpo',
+                delay: 200
+            });
+
+            // Feature cards animation
+            anime({
+                targets: '.feature-card',
+                opacity: [0, 1],
+                translateY: [20, 0],
+                duration: 1000,
+                easing: 'easeOutExpo',
+                delay: anime.stagger(100)
+            });
+
+            // Carousel animation
+            anime({
+                targets: '.carousel',
+                opacity: [0, 1],
+                scale: [0.95, 1],
+                duration: 1000,
+                easing: 'easeOutExpo',
+                delay: 500
+            });
+
+            // Carousel item hover animation
+            document.querySelectorAll('.carousel-item').forEach(item => {
+                item.addEventListener('mouseenter', () => {
+                    anime({
+                        targets: item,
+                        scale: 1.02,
+                        duration: 300,
+                        easing: 'easeOutExpo'
+                    });
+                });
+
+                item.addEventListener('mouseleave', () => {
+                    anime({
+                        targets: item,
+                        scale: 1,
+                        duration: 300,
+                        easing: 'easeOutExpo'
+                    });
+                });
+            });
+
+            // Button hover animation
+            document.querySelectorAll('button').forEach(button => {
+                button.addEventListener('mouseenter', () => {
+                    anime({
+                        targets: button,
+                        scale: 1.05,
+                        duration: 300,
+                        easing: 'easeOutExpo'
+                    });
+                });
+
+                button.addEventListener('mouseleave', () => {
+                    anime({
+                        targets: button,
+                        scale: 1,
+                        duration: 300,
+                        easing: 'easeOutExpo'
+                    });
+                });
+            });
+
+            // Social link hover animation
+            document.querySelectorAll('.social-link').forEach(link => {
+                link.addEventListener('mouseenter', () => {
+                    anime({
+                        targets: link,
+                        scale: 1.1,
+                        duration: 300,
+                        easing: 'easeOutExpo'
+                    });
+                });
+
+                link.addEventListener('mouseleave', () => {
+                    anime({
+                        targets: link,
+                        scale: 1,
+                        duration: 300,
+                        easing: 'easeOutExpo'
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>

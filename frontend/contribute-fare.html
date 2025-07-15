@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Contribute Fare Data</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDPrJsx1qkMrAvYwkMMT6Gs6YMWarej_gs&libraries=places"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background: #000;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #333;
+        }
+        #map {
+            height: 300px;
+            width: 100%;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .error {
+            color: #dc3545;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            background: #f8d7da;
+        }
+        .success {
+            color: #155724;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            background: #d4edda;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Contribute Your Ride Fare</h2>
+        
+        <form id="fareForm">
+            <div class="form-group">
+                <label for="service">Ride Service:</label>
+                <select id="service" required>
+                    <option value="">Select Service</option>
+                    <option value="Uber">Uber</option>
+                    <option value="Ola">Ola</option>
+                    <option value="Rapido">Rapido</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="rideType">Ride Type:</label>
+                <select id="rideType" required>
+                    <option value="">Select Ride Type</option>
+                    <option value="Bike">Bike</option>
+                    <option value="Auto">Auto</option>
+                    <option value="Car">Car</option>
+                    <option value="SUV">SUV</option>
+                    <option value="Premium">Premium</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="pickup">Pickup Location:</label>
+                <input type="text" id="pickup" placeholder="Enter pickup location" required>
+            </div>
+
+            <div class="form-group">
+                <label for="drop">Drop Location:</label>
+                <input type="text" id="drop" placeholder="Enter drop location" required>
+            </div>
+
+            <div class="form-group">
+                <label for="actualFare">Actual Fare Paid (₹):</label>
+                <input type="number" id="actualFare" placeholder="Enter fare amount" required>
+            </div>
+
+            <div class="form-group">
+                <label for="distance">Distance (km):</label>
+                <input type="number" id="distance" step="0.1" placeholder="Enter distance" required>
+            </div>
+
+            <div class="form-group">
+                <label for="duration">Duration (minutes):</label>
+                <input type="number" id="duration" placeholder="Enter duration" required>
+            </div>
+
+            <div class="form-group">
+                <label for="surgeMultiplier">Surge Multiplier (if any):</label>
+                <input type="number" id="surgeMultiplier" step="0.1" value="1" min="1">
+            </div>
+
+            <div class="form-group">
+                <label for="notes">Additional Notes:</label>
+                <textarea id="notes" placeholder="Any additional information about the ride"></textarea>
+            </div>
+
+            <button type="submit">Submit Fare Data</button>
+        </form>
+
+        <div id="map"></div>
+        <div id="message"></div>
+    </div>
+
+    <script>
+        let map;
+        let pickupAutocomplete;
+        let dropAutocomplete;
+        let pickupMarker;
+        let dropMarker;
+        let directionsService;
+        let directionsRenderer;
+
+        function initMap() {
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: { lat: 17.3616, lng: 78.4747 },
+                zoom: 12
+            });
+
+            directionsService = new google.maps.DirectionsService();
+            directionsRenderer = new google.maps.DirectionsRenderer({
+                map: map,
+                suppressMarkers: true
+            });
+
+            pickupAutocomplete = new google.maps.places.Autocomplete(
+                document.getElementById('pickup'),
+                { types: ['geocode'] }
+            );
+
+            dropAutocomplete = new google.maps.places.Autocomplete(
+                document.getElementById('drop'),
+                { types: ['geocode'] }
+            );
+
+            pickupAutocomplete.addListener('place_changed', updateMap);
+            dropAutocomplete.addListener('place_changed', updateMap);
+        }
+
+        function updateMap() {
+            const pickupPlace = pickupAutocomplete.getPlace();
+            const dropPlace = dropAutocomplete.getPlace();
+
+            if (!pickupPlace.geometry || !dropPlace.geometry) {
+                return;
+            }
+
+            if (pickupMarker) pickupMarker.setMap(null);
+            if (dropMarker) dropMarker.setMap(null);
+
+            pickupMarker = new google.maps.Marker({
+                position: pickupPlace.geometry.location,
+                map: map,
+                title: 'Pickup'
+            });
+
+            dropMarker = new google.maps.Marker({
+                position: dropPlace.geometry.location,
+                map: map,
+                title: 'Drop'
+            });
+
+            const request = {
+                origin: pickupPlace.geometry.location,
+                destination: dropPlace.geometry.location,
+                travelMode: 'DRIVING'
+            };
+
+            directionsService.route(request, function(result, status) {
+                if (status == 'OK') {
+                    directionsRenderer.setDirections(result);
+                    map.fitBounds(result.routes[0].bounds);
+                    
+                    // Update distance and duration
+                    const route = result.routes[0].legs[0];
+                    document.getElementById('distance').value = (route.distance.value / 1000).toFixed(1);
+                    document.getElementById('duration').value = Math.round(route.duration.value / 60);
+                }
+            });
+        }
+
+        document.getElementById('fareForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const pickupPlace = pickupAutocomplete.getPlace();
+            const dropPlace = dropAutocomplete.getPlace();
+
+            if (!pickupPlace.geometry || !dropPlace.geometry) {
+                showMessage('Please select valid pickup and drop locations', 'error');
+                return;
+            }
+
+            const fareData = {
+                service: document.getElementById('service').value,
+                rideType: document.getElementById('rideType').value,
+                pickupLocation: {
+                    name: pickupPlace.formatted_address,
+                    latitude: pickupPlace.geometry.location.lat(),
+                    longitude: pickupPlace.geometry.location.lng()
+                },
+                dropLocation: {
+                    name: dropPlace.formatted_address,
+                    latitude: dropPlace.geometry.location.lat(),
+                    longitude: dropPlace.geometry.location.lng()
+                },
+                actualFare: parseFloat(document.getElementById('actualFare').value),
+                distance: parseFloat(document.getElementById('distance').value),
+                duration: parseInt(document.getElementById('duration').value),
+                surgeMultiplier: parseFloat(document.getElementById('surgeMultiplier').value),
+                notes: document.getElementById('notes').value
+            };
+
+            try {
+                const response = await fetch('http://localhost:5000/api/fares', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(fareData)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to submit fare data');
+                }
+
+                showMessage('Fare data submitted successfully!', 'success');
+                document.getElementById('fareForm').reset();
+            } catch (error) {
+                showMessage(`Error: ${error.message}`, 'error');
+            }
+        });
+
+        function showMessage(message, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = message;
+            messageDiv.className = type;
+            messageDiv.style.display = 'block';
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        window.onload = initMap;
+    </script>
+</body>
+</html> 
